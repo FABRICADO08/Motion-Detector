@@ -1,36 +1,34 @@
-name: Upload to Amazon S3 Action
-  # You may pin to the exact commit or the version.
-  # uses: Noelware/s3-action@d3678ff2236aff4b689185e3ef9a11a25fe946b4
-  uses: Noelware/s3-action@2.3.1
-  with:
-    # Input to indicate which directories should be uploaded to Amazon S3.
-    directories: # optional, default is 
-    # Input to indicate which files should be uploaded to Amazon S3.
-    files: # optional, default is 
-    # Access Key ID to use when authenticating with Amazon S3
-    access-key-id: 
-    # Secret Key to use when authenticating with Amazon S3
-    secret-key: 
-    # Path formatting syntax to use when uploading objects to Amazon S3.
-    path-format: # optional, default is $(prefix)/$(file)
-    # Absolute URL (without scheme, i.e, http) to reach when conning to Amazon S3.
-    endpoint: # optional, default is https://s3.amazonaws.com
-    # Prefix string to use when uploading artifacts on Amazon S3. Useful when using the "path-format" syntax.
-    prefix: # optional, default is /
-    # S3 bucket to place objects in
-    bucket: 
-    # ACL for the bucket when the bucket doesn't exist on Amazon S3.
-    bucket-acl: # optional, default is public-read
-    # ACL for objects when uploading to Amazon S3.
-    object-acl: # optional, default is public-read
-    # List of directories or files to exclude in the final output
-    exclude: # optional, default is 
-    # If the action should follow symbolic link files or not
-    follow-symlinks: # optional, default is false
-    # If the S3 client should enforce path access style or not, recommended for instances using MinIO
-    enforce-path-access-style: # optional, default is false
-    # S3 region to use
-    region: # optional, default is us-east-1
-    # Part size (in megabytes).
-    part-size: # optional, default is 15
-          
+# Workflow to MANUALLY deploy a static website to an S3 bucket
+
+name: Manual Deploy to S3
+
+on:
+  # THIS IS THE KEY CHANGE
+  # This trigger allows you to run this workflow manually from the Actions tab in GitHub
+  workflow_dispatch:
+
+# Grant GITHUB_TOKEN the permissions required to fetch an OIDC token
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        # Checks out the code from the branch you select when you run the workflow
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Paste the ARN of the IAM role you created in AWS
+          role-to-assume: arn:aws:iam::ACCOUNT_ID:role/YOUR_IAM_ROLE_NAME # ⚠️ CHANGE THIS
+          aws-region: us-east-1 # ⚠️ CHANGE THIS to your bucket's region
+
+      - name: Deploy static site to S3 bucket
+        run: |
+          aws s3 sync . s3://simberwebsite --delete
+          echo "Deployment successful! Visit your site."
